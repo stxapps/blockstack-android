@@ -2,7 +2,7 @@
 
 buildscript {
     ext {
-        kotlin_version = '1.4.10'
+        kotlin_version = '1.6.0'
         khex_version = '1.0.0'
         khash_version = ' 1.0.0-RC5'
         kethereum_version = '0.83.0'
