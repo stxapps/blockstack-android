@@ -316,6 +316,7 @@ class BlockstackSession(private val sessionStore: ISessionStore, private val app
 
                 if (result !== null) {
                     if (file !== null && result is ByteArray) {
+                        if (file.parentFile?.exists() == false) file.parentFile?.mkdirs()
                         file.writeBytes(result)
                         return@withContext Result("")
                     }
