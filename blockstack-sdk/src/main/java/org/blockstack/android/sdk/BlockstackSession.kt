@@ -495,6 +495,101 @@ class BlockstackSession(private val sessionStore: ISessionStore, private val app
         }
     }
 
+    private fun processPfData(pfData: JSONObject, dir: String, publicKey: String): JSONObject {
+        var values: JSONArray? = null; var isSequential: Boolean? = null
+        try {
+            values = pfData.getJSONArray("values")
+            isSequential = pfData.getBoolean("isSequential")
+        } catch (_: Exception) {}
+        if (values is JSONArray && isSequential is Boolean) {
+            val pValues = JSONArray()
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                val pValue = processPfData(value, dir, publicKey)
+                pValues.put(pValue)
+            }
+
+            val ppfData = JSONObject(pfData.toString())
+            ppfData.put("values", pValues)
+            return ppfData
+        }
+
+        var id: String? = null; var type: String? = null; var path: String? = null
+        try {
+            id = pfData.getString("id")
+            type = pfData.getString("type")
+            path = pfData.getString("path")
+        } catch (_: Exception) {}
+        if (id is String && type is String && path is String) {
+            if (type == "putFile") {
+                val ppfData = JSONObject(pfData.toString())
+
+                val content: ByteArray; val wasString: Boolean
+                if (path.startsWith(FILE_PREFIX)) {
+                    val pathUri = Uri.parse(path.replace(FILE_PREFIX, "$dir/"))
+                    val file = File(pathUri.path!!)
+                    content = if (file.exists()) {
+                        file.inputStream().use { it.readBytes() }
+                    } else {
+                        "".toByteArray()
+                    }
+                    wasString = false
+
+                    path = path.substring(FILE_PREFIX.length)
+                    ppfData.put("path", path)
+                } else {
+                    content = pfData.getString("content").toByteArray()
+                    wasString = true
+                }
+
+                val ect = Encryption().encryptWithPublicKey(content, publicKey)
+                val ject = CipherObject(
+                    ect.iv, ect.ephemPublicKey, ect.ciphertext, ect.mac, wasString
+                ).json
+
+                ppfData.put("content", ject)
+                return ppfData
+            }
+
+            return pfData
+        }
+
+        Log.d(TAG, "In processPfData, invalid data: $pfData")
+        return pfData
+    }
+
+    suspend fun performFiles(pfData: String, dir: String): Result<out String> = withContext(dispatcher) {
+        Log.d(TAG, "performFiles: pfData: $pfData dir: $dir")
+        try {
+            val appPrivateKeyPair = PrivateKey(HexString(appPrivateKey!!)).toECKeyPair()
+            val publicKey = appPrivateKeyPair.toHexPublicKey64()
+
+            val ppfData = processPfData(JSONObject(pfData), dir, publicKey).toString()
+
+            val hubConfig = getOrSetLocalGaiaHubConnection()
+            val response = withContext(dispatcher) {
+                val request = Request.Builder()
+                    .url("${hubConfig.server}/perform-files/${hubConfig.address}")
+                    .addHeader("Content-Type", CONTENT_TYPE_JSON)
+                    .addHeader("Authorization", "bearer ${hubConfig.token}")
+                    .method(
+                        "POST", ppfData.toRequestBody(CONTENT_TYPE_JSON.toMediaType())
+                    )
+                    .build()
+                callFactory.newCall(request).execute()
+            }
+            if (!response.isSuccessful) {
+                return@withContext Result(null, ResultError(ErrorCode.NetworkError, "failed to performFiles: ${response.code}", response.code.toString()))
+            }
+
+            val responseText = response.body?.string() ?: return@withContext Result(null, ResultError(ErrorCode.UnknownError, "invalid responseText from performFiles"))
+
+            return@withContext Result(responseText)
+        } catch (e: Exception) {
+            Log.d(TAG, e.message, e)
+            return@withContext Result(null, ResultError(ErrorCode.UnknownError, e.message ?: e.toString()))
+        }
+    }
 
     /**
      * List the set of files in this application's Gaia storage bucket.

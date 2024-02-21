@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private val textFileName = "message.txt"
     private val imageFileName = "team.jpg"
+    //private val imageFileName = "images/1708491132374-hjJQ-vets-1708496809761.jpg"
 
     private var _blockstackSession: BlockstackSession? = null
 
@@ -74,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         deleteImageFileButton.isEnabled = false
         getStringFileFromUserButton.isEnabled = false
         getAppBucketUrlButton.isEnabled = false
+        performFilesButton.isEnabled = false
         listFilesButton.isEnabled = false
         putLocalFileButton.isEnabled = false
         getLocalFileButton.isEnabled = false
@@ -255,6 +257,22 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+        performFilesButton.setOnClickListener {
+            //val pfData = """{"values":[{"id":"1708491132374-hjJQ-qGLN-1708491136062","type":"putFile","path":"links/1707816556114-IeqP/1708491132374-hjJQ-qGLN-1708491136062.json","content":"{\"id\":\"1708491132374-hjJQ-qGLN-1708491136062\",\"url\":\"www.lyft.com\",\"addedDT\":1708491132374,\"decor\":{\"image\":{\"bg\":{\"type\":\"image\",\"value\":\"/static/media/silver-framed-eyeglasses-beside-white-click-pen-and-white-notebook.43cbd30b.jpg\"},\"fg\":null},\"favicon\":{\"bg\":{\"type\":\"color\",\"value\":\"bg-teal-300\"}}},\"extractedResult\":{\"url\":\"http://www.lyft.com\",\"status\":\"EXTRACT_OK\",\"title\":\"Lyft: A ride whenever you need one\",\"image\":\"https://images.ctfassets.net/q8mvene1wzq4/3amVLJGrSSKSYmDbFOCn9C/f7133270e145473d34a76d583294841d/04__2x.png\",\"extractedDT\":1705309222422}}"}],"isSequential":false,"nItemsForNs":10}"""
+            //val pfData = """{"values":[{"values":[{"id":"images/1708491132374-hjJQ-vets-1708496809761.jpg","type":"putFile","path":"file://images/1708491132374-hjJQ-vets-1708496809761.jpg","content":""}],"isSequential":false,"nItemsForNs":10},{"id":"links/1707816556114-IeqP/1708491132374-hjJQ-UHxX-1708496809781.json","type":"putFile","path":"links/1707816556114-IeqP/1708491132374-hjJQ-UHxX-1708496809781.json","content":"{\"id\":\"1708491132374-hjJQ-UHxX-1708496809781\",\"url\":\"www.lyft.com\",\"addedDT\":1708491132374,\"decor\":{\"image\":{\"bg\":{\"type\":\"image\",\"value\":\"/static/media/silver-framed-eyeglasses-beside-white-click-pen-and-white-notebook.43cbd30b.jpg\"},\"fg\":null},\"favicon\":{\"bg\":{\"type\":\"color\",\"value\":\"bg-teal-300\"}}},\"extractedResult\":{\"url\":\"http://www.lyft.com\",\"status\":\"EXTRACT_OK\",\"title\":\"Lyft: A ride whenever you need one\",\"image\":\"https://images.ctfassets.net/q8mvene1wzq4/3amVLJGrSSKSYmDbFOCn9C/f7133270e145473d34a76d583294841d/04__2x.png\",\"extractedDT\":1705309222422},\"custom\":{\"title\":\"Lyft --- bla bla bla\",\"image\":\"cdroot/images/1708491132374-hjJQ-vets-1708496809761.jpg\"}}"}],"isSequential":true,"nItemsForNs":10}"""
+            val pfData = """{"values":[{"values":[{"values":[],"isSequential":false,"nItemsForNs":10},{"values":[{"id":"links/1707816556114-IeqP/1708491132374-hjJQ-UHxX-1708496809781.json","type":"deleteFile","path":"links/1707816556114-IeqP/1708491132374-hjJQ-UHxX-1708496809781.json","doIgnoreDoesNotExistError":true}],"isSequential":false,"nItemsForNs":10}],"isSequential":true,"nItemsForNs":10}],"isSequential":false,"nItemsForNs":10}"""
+            val dir = this.filesDir.absolutePath
+
+            lifecycleScope.launch {
+                val results = blockstackSession().performFiles(pfData, dir)
+                if (results.hasValue) {
+                    Log.d(TAG, "performFiles results: ${results.value}")
+                } else {
+                    Toast.makeText(this@MainActivity, "error: ${results.error}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         listFilesButton.setOnClickListener {
             listFilesText.text = "...."
             lifecycleScope.launch {
@@ -290,6 +308,10 @@ class MainActivity : AppCompatActivity() {
 
             val fpath = this.filesDir.absolutePath + "/" + imageFileName
             Log.d(TAG, "Local file path: $fpath")
+
+            //val dir = File(this.filesDir.absolutePath + "/images")
+            //if (!dir.exists()) dir.mkdirs()
+
             val pathUri = Uri.parse(fpath)
             val file = File(pathUri.path!!)
             file.writeBytes(bitMapData)
@@ -373,6 +395,7 @@ class MainActivity : AppCompatActivity() {
         deleteImageFileButton.isEnabled = true
         getStringFileFromUserButton.isEnabled = true
         getAppBucketUrlButton.isEnabled = true
+        performFilesButton.isEnabled = true
         listFilesButton.isEnabled = true
         putLocalFileButton.isEnabled = true
         getLocalFileButton.isEnabled = true
