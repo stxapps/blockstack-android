@@ -32,6 +32,7 @@ import java.io.IOException
 import java.math.BigInteger
 import java.security.InvalidParameterException
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 const val SIGNATURE_FILE_EXTENSION = ".sig"
 const val FILE_PREFIX = "file://"
@@ -576,7 +577,16 @@ class BlockstackSession(private val sessionStore: ISessionStore, private val app
                         "POST", ppfData.toRequestBody(CONTENT_TYPE_JSON.toMediaType())
                     )
                     .build()
-                callFactory.newCall(request).execute()
+                var customCallFactory = callFactory
+                if (customCallFactory is OkHttpClient) {
+                    customCallFactory = customCallFactory.newBuilder()
+                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .readTimeout(0, TimeUnit.SECONDS)
+                            .writeTimeout(0, TimeUnit.SECONDS)
+                            .callTimeout(90, TimeUnit.SECONDS)
+                            .build()
+                }
+                customCallFactory.newCall(request).execute()
             }
             if (!response.isSuccessful) {
                 return@withContext Result(null, ResultError(ErrorCode.NetworkError, "failed to performFiles: ${response.code}", response.code.toString()))
