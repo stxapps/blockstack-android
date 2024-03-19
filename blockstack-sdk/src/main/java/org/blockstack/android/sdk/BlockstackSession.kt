@@ -580,10 +580,10 @@ class BlockstackSession(private val sessionStore: ISessionStore, private val app
                 var customCallFactory = callFactory
                 if (customCallFactory is OkHttpClient) {
                     customCallFactory = customCallFactory.newBuilder()
-                            .connectTimeout(10, TimeUnit.SECONDS)
-                            .readTimeout(0, TimeUnit.SECONDS)
-                            .writeTimeout(0, TimeUnit.SECONDS)
-                            .callTimeout(90, TimeUnit.SECONDS)
+                            .connectTimeout(60, TimeUnit.SECONDS)
+                            .readTimeout(90, TimeUnit.SECONDS)
+                            .writeTimeout(90, TimeUnit.SECONDS)
+                            .callTimeout(0, TimeUnit.SECONDS)
                             .build()
                 }
                 customCallFactory.newCall(request).execute()
