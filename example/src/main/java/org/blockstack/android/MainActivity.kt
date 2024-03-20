@@ -84,6 +84,16 @@ class MainActivity : AppCompatActivity() {
                 .config(config, sessionStore, appDetails)
 
         signInButton.setOnClickListener {
+            /*val userData = UserData(JSONObject()
+                    .put("decentralizedID", "")
+                    .put("identityAddress", "")
+                    .put("appPrivateKey", "")
+                    .put("hubUrl", "")
+                    .put("gaiaAssociationToken", ""))
+            lifecycleScope.launch {
+                blockstackSession().updateUserData(userData)
+                onSignIn(userData)
+            }*/
             BlockstackConnect.connect(this@MainActivity)
         }
 
